@@ -115,6 +115,8 @@ async function run() {
             res.send(result)
         })
 
+
+
         app.get('/reporter/:email', async (req, res) => {
             const email = req.params.email;
             const query = { email: email }
@@ -148,7 +150,7 @@ async function run() {
 
         app.get('/news', async (req, res) => {
             const query = {}
-            const result = await newsCollection.find(query).toArray()
+            const result = await newsCollection.find(query).sort({ _id: -1 }).toArray()
             res.send(result)
         })
         app.get('/news/:id', async (req, res) => {
@@ -163,7 +165,130 @@ async function run() {
             const result = await newsCollection.insertOne(body)
             res.send(result)
         })
+        // app.get('/test', async (req, res) => {
 
+        //     const query = {}
+        //     const updateDoc = {
+        //         $set: {
+        //             upVote: [],
+        //             downVote: []
+
+        //         }
+        //     }
+        //     const option = { upsert: true }
+
+        //     const result = await newsCollection.updateMany(query, updateDoc, option)
+        //     res.send(result)
+
+        // })
+
+        app.put('/likepost/:id', async (req, res) => {
+            const id = req.params.id
+            const body = req.body
+            const filter = { _id: ObjectId(id) }
+
+            console.log(body);
+            const existingVotes = await newsCollection.findOne(filter)
+          
+
+
+            const likeExited = existingVotes.upVote.find(voteEmail => voteEmail.userEmail === body.userEmail)
+            console.log(likeExited)
+
+            if (likeExited) {
+                console.log('Like Removed');
+                // if exist then remove the like
+                const removedlike = existingVotes.upVote.filter(like => like.userEmail !== body.userEmail)
+
+                console.log(removedlike);
+                const updateDoc = {
+                    $set: {
+                        upVote: [...removedlike]
+                    }
+                }
+
+                const option = { upsert: true }
+                const result = await newsCollection.updateOne(filter, updateDoc, option)
+                res.send(result)
+
+                return
+
+
+            }
+            else {
+                console.log('Like Added');
+                const updateDoc = {
+                    $set: {
+                        upVote: [...existingVotes.upVote, body]
+                    }
+                }
+                const option = { upsert: true }
+                const result = await newsCollection.updateOne(filter, updateDoc, option)
+                res.send(result)
+                return
+            }
+
+
+
+
+        })
+        app.put('/dislikepost/:id', async (req, res) => {
+            const id = req.params.id
+            const body = req.body
+            const filter = { _id: ObjectId(id) }
+
+            console.log(body);
+            const eventPost = await newsCollection.findOne(filter)
+          
+
+
+            const likeExited = eventPost.downVote.find(voteEmail => voteEmail.userEmail === body.userEmail)
+            console.log(likeExited)
+
+            if (likeExited) {
+                console.log('Like Removed');
+                // if exist then remove the like
+                const removedlike = eventPost.downVote.filter(like => like.userEmail !== body.userEmail)
+
+                console.log(removedlike);
+                const updateDoc = {
+                    $set: {
+                        downVote: [...removedlike]
+                    }
+                }
+
+                const option = { upsert: true }
+                const result = await newsCollection.updateOne(filter, updateDoc, option)
+                res.send(result)
+
+                return
+
+
+            }
+            else {
+                console.log('Like Added');
+                const updateDoc = {
+                    $set: {
+                        downVote: [...eventPost.downVote, body]
+                    }
+                }
+                const option = { upsert: true }
+                const result = await newsCollection.updateOne(filter, updateDoc, option)
+                res.send(result)
+                return
+            }
+
+
+
+
+        })
+
+        app.delete('/deletenews/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: ObjectId(id) }
+            const result = await newsCollection.deleteOne(query)
+            res.send(result)
+        })
 
 
 
